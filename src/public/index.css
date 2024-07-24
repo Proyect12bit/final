@@ -1,0 +1,60 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    text-align: center;
+}
+
+h1 {
+    color: #007BFF;
+}
+
+.video-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px;
+}
+
+.video-section {
+    border: 2px solid #007BFF;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #fff;
+}
+
+video, canvas {
+    width: 512px;
+    height: 384px;
+    border: 1px solid #ccc;
+    background-color: #000;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #007BFF;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 20px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.status {
+    margin: 10px;
+    font-size: 18px;
+}
+
+.metrics {
+    margin: 20px;
+    font-size: 18px;
+}
+
+.metrics p {
+    margin: 5px 0;
+}

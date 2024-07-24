@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emitir y Recibir Video en Directo</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1>Emisión en Directo</h1>
+    
+    <div class="video-container">
+        <div class="video-section">
+            <h2>Transmisión</h2>
+            <video src="" id="video" autoplay="true"></video>
+        </div>
+
+        <div class="video-section">
+            <h2>Recepción</h2>
+            <canvas id="preview"></canvas>
+        </div>
+    </div>
+
+    <button id="btn">Emitir</button>
+    <div class="status"></div>
+    <div class="metrics">
+        <p id="latency">Latencia: -</p>
+        <p id="packetLoss">Pérdida de paquetes: -</p>
+    </div>
+
+    <script>
+        var canvas = document.querySelector("#preview");
+        var context = canvas.getContext("2d");
+        var btn = document.querySelector("#btn");
+        var video = document.querySelector("#video");
+
+        canvas.width = 512;
+        canvas.height = 384;
+
+        var socket = io();
+        var peerConnection;
+
+        function publicarMensaje(msg) {
+            document.querySelector(".status").innerText = msg;
+        }
+
+        function loadCamara(stream) {
+            video.srcObject = stream;
+            publicarMensaje("Cámara funcionando");
+
+            peerConnection = new RTCPeerConnection();
+            peerConnection.addStream(stream);
+
+            peerConnection.onicecandidate = function(event) {
+                if (event.candidate) {
+                    socket.emit('candidate', event.candidate);
+                }
+            };
+
+            peerConnection.ontrack = function(event) {
+                var remoteStream = event.streams[0];
+                video.srcObject = remoteStream;
+
+                // Cada 500ms, actualiza el canvas con el contenido del video
+                setInterval(() => {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                }, 500);
+            };
+
+            setInterval(async () => {
+                try {
+                    const stats = await peerConnection.getStats();
+                    let latency = 'N/A';
+                    let packetLoss = 'N/A';
+
+                    stats.forEach(report => {
+                        if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                            latency = report.currentRoundTripTime ? (report.currentRoundTripTime * 1000).toFixed(2) + ' ms' : 'N/A';
+                        }
+
+                        if (report.type === 'inbound-rtp' && report.kind === 'video') {
+                            packetLoss = report.packetsLost !== undefined ? report.packetsLost : 'N/A';
+                        }
+                    });
+
+                    document.getElementById('latency').innerText = 'Latencia: ' + latency;
+                    document.getElementById('packetLoss').innerText = 'Pérdida de paquetes: ' + packetLoss;
+                } catch (error) {
+                    console.error('Error getting RTC stats:', error);
+                }
+            }, 5000);
+        }
+
+        function errorCamara() {
+            publicarMensaje("Cámara ha fallado");
+        }
+
+        function verVideo(video, context) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            socket.emit("stream", canvas.toDataURL("image/webp"));
+        }
+
+        btn.addEventListener("click", () => {
+            alert("Emitiendo");
+            navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia ||
+                navigator.mozGetUserMedia || navigator.msGetUserMedia);
+
+            if (navigator.getUserMedia) {
+                navigator.getUserMedia({ video: true }, loadCamara, errorCamara);
+            }
+
+            var intervalo = setInterval(() => {
+                verVideo(video, context);
+            }, 500);
+        });
+
+    </script>
+</body>
+</html>
+
+
+
+
+
